@@ -8,14 +8,51 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var viewModel = ProjectViewModel()
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            ProjectsView(viewModel: viewModel)
+                .tabItem {
+                    Label("Projects", systemImage: "list.bullet")
+                }
+            
+            Text("Sessions")
+                .tabItem {
+                    Label("Sessions", systemImage: "clock")
+                }
+            
+            Text("Settings")
+                .tabItem {
+                    Label("Settings", systemImage: "gear")
+                }
         }
-        .padding()
+    }
+}
+
+struct ProjectsView: View {
+    @ObservedObject var viewModel: ProjectViewModel
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading) {
+                Text("Your Projects")
+                    .font(.largeTitle)
+                    .bold()
+                    .padding(.horizontal)
+                    .padding(.top)
+                
+                VStack(spacing: 16) {
+                    ForEach(viewModel.projects) { project in
+                        ProjectCard(project: project) {
+                            viewModel.startNewSession(for: project)
+                        }
+                    }
+                }
+                .padding()
+            }
+        }
+        .background(Color(.systemGroupedBackground))
     }
 }
 
