@@ -64,18 +64,6 @@ struct ComponentPlayground: View {
                         totalTime: 7200
                     ) {}
                 )
-            ),
-            PlaygroundComponent(
-                name: "Project Card",
-                description: "Compact project card with action button",
-                view: AnyView(
-                    ProjectCard(
-                        project: Project(
-                            name: "Example Project",
-                            description: "This is an example project card"
-                        )
-                    ) {}
-                )
             )
         ]),
         
@@ -90,16 +78,6 @@ struct ComponentPlayground: View {
                     )
                 )
             )
-        ]),
-        
-        ComponentCategory(name: "Navigation", components: [
-            PlaygroundComponent(
-                name: "Tab Menu",
-                description: "Horizontal scrolling tab menu with indicators",
-                view: AnyView(
-                    TabMenuExample()
-                )
-            )
         ])
     ]
     
@@ -109,7 +87,9 @@ struct ComponentPlayground: View {
                 ForEach(categories) { category in
                     Section(header: Text(category.name)) {
                         ForEach(category.components) { component in
-                            NavigationLink(destination: ComponentDetail(component: component)) {
+                            NavigationLink {
+                                ComponentDetail(component: component)
+                            } label: {
                                 VStack(alignment: .leading) {
                                     Text(component.name)
                                         .font(.headline)
@@ -155,30 +135,28 @@ struct ComponentDetail: View {
     }
 }
 
-// Example Views
-struct TabMenuExample: View {
-    @State private var selectedTab = "Tab 1"
-    let tabs = ["Tab 1", "Tab 2", "Tab 3", "Tab 4"]
-    
-    var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 20) {
-                ForEach(tabs, id: \.self) { tab in
-                    VStack {
-                        Text(tab)
-                            .foregroundColor(selectedTab == tab ? .blue : .gray)
-                        
-                        Rectangle()
-                            .frame(height: 2)
-                            .foregroundColor(selectedTab == tab ? .blue : .clear)
-                    }
-                    .onTapGesture {
-                        withAnimation { selectedTab = tab }
-                    }
+#Preview {
+    ComponentPlayground()
+}
+
+#Preview("Grid") {
+    ScrollView {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ], spacing: 20) {
+            ForEach(PreviewData.allComponents) { component in
+                VStack {
+                    component.view
+                        .frame(height: 200)
+                    
+                    Text(component.name)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
-            .padding()
         }
+        .padding()
     }
 }
 
@@ -233,36 +211,4 @@ enum PreviewData {
             )
         )
     ]
-}
-
-struct ComponentPlayground_Previews: PreviewProvider {
-    static var previews: some View {
-        ComponentPlayground()
-    }
-}
-
-struct ComponentGrid_Previews: PreviewProvider {
-    static var previews: some View {
-        NavigationView {
-            ScrollView {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 20) {
-                    ForEach(PreviewData.allComponents) { component in
-                        VStack {
-                            component.view
-                                .frame(height: 200)
-                            
-                            Text(component.name)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Component Grid")
-        }
-    }
 }

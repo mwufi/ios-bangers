@@ -102,32 +102,3 @@ struct StatsSessionCard: View {
         .cornerRadius(12)
     }
 }
-
-struct SessionCardVariants_Previews: PreviewProvider {
-    static var previews: some View {
-        #Preview("Session Card Variants") {
-            ScrollView {
-                VStack(spacing: 20) {
-                    MinimalSessionCard(title: "Quick Focus", duration: 1800) {}
-                    
-                    GradientSessionCard(
-                        title: "Evening Meditation",
-                        subtitle: "Clear your mind before sleep",
-                        gradient: LinearGradient(
-                            colors: [.purple, .blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    ) {}
-                    
-                    StatsSessionCard(
-                        title: "This Week",
-                        sessionsCount: 12,
-                        totalTime: 7200
-                    ) {}
-                }
-                .padding()
-            }
-        }
-    }
-}
