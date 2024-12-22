@@ -83,3 +83,49 @@ struct ProjectDetailView: View {
         .ignoresSafeArea()
     }
 }
+
+#Preview("Empty Project") {
+    NavigationView {
+        ProjectDetailView(
+            project: Project(
+                name: "New Project",
+                description: "Just getting started"
+            ),
+            activeSession: .constant(nil)
+        )
+    }
+}
+
+#Preview("With Sessions") {
+    NavigationView {
+        ProjectDetailView(
+            project: Project(
+                name: "Reading",
+                description: "Daily reading sessions",
+                sessions: [
+                    Session(
+                        startTime: Date().addingTimeInterval(-3600),
+                        endTime: Date()
+                    ),
+                    Session(
+                        startTime: Date().addingTimeInterval(-7200),
+                        endTime: Date().addingTimeInterval(-3600)
+                    )
+                ]
+            ),
+            activeSession: .constant(nil)
+        )
+    }
+}
+
+#Preview("With Active Session") {
+    NavigationView {
+        ProjectDetailView(
+            project: Project(
+                name: "Meditation",
+                description: "Daily mindfulness practice"
+            ),
+            activeSession: .constant(Session(startTime: Date()))
+        )
+    }
+}

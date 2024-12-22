@@ -102,3 +102,58 @@ struct StatsSessionCard: View {
         .cornerRadius(12)
     }
 }
+
+#Preview("Minimal") {
+    MinimalSessionCard(
+        title: "Quick Focus",
+        duration: 1800
+    ) {}
+}
+
+#Preview("Gradient") {
+    GradientSessionCard(
+        title: "Evening Meditation",
+        subtitle: "Clear your mind",
+        gradient: LinearGradient(
+            colors: [.purple, .blue],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    ) {}
+}
+
+#Preview("Stats") {
+    StatsSessionCard(
+        title: "This Week",
+        sessionsCount: 12,
+        totalTime: 7200
+    ) {}
+}
+
+#Preview("All Variants") {
+    ScrollView {
+        VStack(spacing: 20) {
+            MinimalSessionCard(
+                title: "Quick Focus",
+                duration: 1800
+            ) {}
+            
+            GradientSessionCard(
+                title: "Evening Meditation",
+                subtitle: "Clear your mind",
+                gradient: LinearGradient(
+                    colors: [.purple, .blue],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            ) {}
+            
+            StatsSessionCard(
+                title: "This Week",
+                sessionsCount: 12,
+                totalTime: 7200
+            ) {}
+        }
+        .padding()
+    }
+}

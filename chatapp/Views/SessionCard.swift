@@ -41,3 +41,45 @@ struct SessionCard: View {
         .shadow(radius: 5)
     }
 }
+
+#Preview("Default") {
+    SessionCard(
+        title: "Morning Focus",
+        subtitle: "Start your day with intention",
+        imageName: "sunrise.fill"
+    ) {}
+}
+
+#Preview("Different Icons") {
+    ScrollView(.horizontal) {
+        HStack(spacing: 16) {
+            SessionCard(
+                title: "Meditation",
+                subtitle: "Clear your mind",
+                imageName: "moon.stars.fill"
+            ) {}
+            
+            SessionCard(
+                title: "Exercise",
+                subtitle: "Stay active",
+                imageName: "figure.run"
+            ) {}
+            
+            SessionCard(
+                title: "Reading",
+                subtitle: "Learn something new",
+                imageName: "book.fill"
+            ) {}
+        }
+        .padding()
+    }
+}
+
+#Preview("Dark Mode") {
+    SessionCard(
+        title: "Night Focus",
+        subtitle: "Deep work session",
+        imageName: "moon.fill"
+    ) {}
+    .preferredColorScheme(.dark)
+}

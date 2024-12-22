@@ -28,3 +28,36 @@ struct SessionToast: View {
         .padding()
     }
 }
+
+#Preview("Active Session") {
+    VStack {
+        Spacer()
+        SessionToast(
+            session: Session(startTime: Date()),
+            projectName: "Morning Focus"
+        )
+    }
+}
+
+#Preview("Long Session") {
+    VStack {
+        Spacer()
+        SessionToast(
+            session: Session(
+                startTime: Date().addingTimeInterval(-3600)
+            ),
+            projectName: "Deep Work"
+        )
+    }
+}
+
+#Preview("Dark Mode") {
+    VStack {
+        Spacer()
+        SessionToast(
+            session: Session(startTime: Date()),
+            projectName: "Night Focus"
+        )
+    }
+    .preferredColorScheme(.dark)
+}

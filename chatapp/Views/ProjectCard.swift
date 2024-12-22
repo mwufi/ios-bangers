@@ -31,3 +31,44 @@ struct ProjectCard: View {
         .cornerRadius(12)
     }
 }
+
+#Preview("Default") {
+    ProjectCard(
+        project: Project(
+            name: "Morning Routine",
+            description: "Start your day with intention"
+        )
+    ) {}
+}
+
+#Preview("With Sessions") {
+    ProjectCard(
+        project: Project(
+            name: "Evening Focus",
+            description: "Deep work session",
+            sessions: [
+                Session(startTime: Date().addingTimeInterval(-3600)),
+                Session(startTime: Date().addingTimeInterval(-7200))
+            ]
+        )
+    ) {}
+}
+
+#Preview("Grid") {
+    VStack(spacing: 16) {
+        ProjectCard(
+            project: Project(
+                name: "Project 1",
+                description: "Description 1"
+            )
+        ) {}
+        
+        ProjectCard(
+            project: Project(
+                name: "Project 2",
+                description: "Description 2"
+            )
+        ) {}
+    }
+    .padding()
+}
