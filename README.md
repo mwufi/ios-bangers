@@ -10,6 +10,7 @@ A collection of stunning iOS UI components and effects built with SwiftUI.
     <img src="docs/glow_playground.png" width="33%" alt="Neon glow playground"/>
     <img src="docs/flow.png" width="33%" alt="Original app idea"/>
     <img src="docs/gradient.png" width="33%" alt="Soft Animations"/>
+    <img src="docs/navigation.png" width="33%" alt="Navigation Stacks!"/>
 </div>
 
 Interactive neon glow effects with customizable:
