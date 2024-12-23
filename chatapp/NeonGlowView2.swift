@@ -1,8 +1,10 @@
 import SwiftUI
 
 struct NeonGlowView2: View {
-    let amount: Double
-    let color: Color
+    let strokeWidth: CGFloat
+    let glowColor: Color
+    let highlightOffset: CGPoint
+    let amount: Double = 0.7 // Fixed amount for now
     let glowRadius: CGFloat = 20
     
     var body: some View {
@@ -13,16 +15,16 @@ struct NeonGlowView2: View {
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            color.opacity(0.8),
-                            color,
-                            color.opacity(0.8)
+                            glowColor.opacity(0.8),
+                            glowColor,
+                            glowColor.opacity(0.8)
                         ]),
                         center: .center,
                         startAngle: .degrees(0),
                         endAngle: .degrees(360)
                     ),
                     style: StrokeStyle(
-                        lineWidth: 8,
+                        lineWidth: strokeWidth,
                         lineCap: .round,
                         lineJoin: .round,
                         miterLimit: 0,
@@ -30,10 +32,10 @@ struct NeonGlowView2: View {
                         dashPhase: 0
                     )
                 )
-                .shadow(color: color.opacity(0.8), radius: glowRadius)
-                .shadow(color: color.opacity(0.6), radius: glowRadius)
+                .shadow(color: glowColor.opacity(0.8), radius: glowRadius)
+                .shadow(color: glowColor.opacity(0.6), radius: glowRadius)
             
-            // Soft white inner glow
+            // Soft white inner glow with adjustable position
             Circle()
                 .trim(from: 0, to: amount)
                 .stroke(
@@ -47,13 +49,14 @@ struct NeonGlowView2: View {
                         center: .center
                     ),
                     style: StrokeStyle(
-                        lineWidth: 6, // Slightly thinner
+                        lineWidth: strokeWidth * 0.75,
                         lineCap: .round,
                         lineJoin: .round
                     )
                 )
-                .blur(radius: 2) // Add slight blur to soften edges
+                .blur(radius: 2)
                 .blendMode(.plusLighter)
+                .offset(x: highlightOffset.x * 100, y: highlightOffset.y * 100)
             
             // Variable thickness overlay
             Circle()
@@ -61,39 +64,39 @@ struct NeonGlowView2: View {
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(stops: [
-                            .init(color: color.opacity(0.4), location: 0),
-                            .init(color: color.opacity(0.8), location: 0.5),
-                            .init(color: color.opacity(0.4), location: 1)
+                            .init(color: glowColor.opacity(0.4), location: 0),
+                            .init(color: glowColor.opacity(0.8), location: 0.5),
+                            .init(color: glowColor.opacity(0.4), location: 1)
                         ]),
                         center: .center
                     ),
                     style: StrokeStyle(
-                        lineWidth: 12, // Wider base for variable thickness
+                        lineWidth: strokeWidth * 1.5,
                         lineCap: .round,
                         lineJoin: .round
                     )
                 )
-                .blur(radius: 3) // Soft blur for smooth variation
+                .blur(radius: 3)
                 .blendMode(.plusLighter)
             
             // Value text in center
             Text("$\(amount * 1000, specifier: "%.2f")")
                 .font(.system(size: 36, weight: .bold))
                 .foregroundColor(.white)
-                .shadow(color: color.opacity(0.8), radius: 10)
+                .shadow(color: glowColor.opacity(0.8), radius: 10)
         }
         .frame(width: 200, height: 200)
     }
 }
-
 
 #Preview {
     ZStack {
         Color.black.edgesIgnoringSafeArea(.all)
         
         NeonGlowView2(
-            amount: 0.7,
-            color: .purple
+            strokeWidth: 8,
+            glowColor: .purple,
+            highlightOffset: .zero
         )
     }
 }
