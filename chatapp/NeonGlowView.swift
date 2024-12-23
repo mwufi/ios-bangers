@@ -7,10 +7,22 @@ struct NeonGlowView: View {
     
     var body: some View {
         ZStack {
-            // Base circle with glow
+            // Base circle with glow and gradient
             Circle()
                 .trim(from: 0, to: amount)
-                .stroke(color, lineWidth: 8)
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(colors: [
+                            color.opacity(0.8),  // Dimmer start
+                            color,               // Full brightness middle
+                            color.opacity(0.8)   // Dimmer end
+                        ]),
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(360)
+                    ),
+                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                )
                 .shadow(color: color.opacity(0.8), radius: glowRadius)
                 .shadow(color: color.opacity(0.6), radius: glowRadius)
             
