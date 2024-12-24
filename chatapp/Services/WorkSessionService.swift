@@ -12,18 +12,11 @@ class WorkSessionService: ObservableObject {
             .value
     }
     
-    func createSession(name: String, category: String? = nil, projectId: Int? = nil, target: Int? = nil) async throws -> WorkSession {
+    func createSession(newSession: NewSession) async throws -> WorkSession {
         guard let userId = auth.currentUser?.id else {
             throw AuthError.notAuthenticated
         }
         
-        let newSession = NewSession(
-            name: name,
-            category: category,
-            projectId: projectId,
-            target: target,
-            createdBy: userId
-        )
         
         let sessions: [WorkSession] = try await auth.supabase
             .from("work_sessions")

@@ -14,14 +14,12 @@ struct NewSession: Encodable {
     let name: String
     let category: String?
     let projectId: Int?
-    let target: Int?
     let createdBy: UUID
     
     enum CodingKeys: String, CodingKey {
         case name
         case category
         case projectId = "project_id"
-        case target
         case createdBy = "created_by"
     }
 }

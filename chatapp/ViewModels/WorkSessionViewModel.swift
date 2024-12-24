@@ -37,8 +37,15 @@ class WorkSessionViewModel: ObservableObject {
     }
     
     func createSession(name: String, category: String? = nil, projectId: Int? = nil, target: Int? = nil) async {
+        let newSession = NewSession(
+            name: name,
+            category: category,
+            projectId: projectId,
+            createdBy: AuthenticationService.shared.currentUser?.id ?? UUID()
+        )
+        
         do {
-            _ = try await sessionService.createSession(name: name, category: category, projectId: projectId, target: target)
+            _ = try await sessionService.createSession(newSession: newSession)
             await fetchSessions()
         } catch {
             self.error = error.localizedDescription

@@ -81,35 +81,7 @@ struct WorkSessionsView: View {
                 }
             }
             .sheet(isPresented: $isShowingNewSession) {
-                NavigationView {
-                    Form {
-                        TextField("Session Name", text: $newSessionName)
-                        TextField("Category (Optional)", text: $newSessionCategory)
-                    }
-                    .navigationTitle("New Session")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") {
-                                isShowingNewSession = false
-                            }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Start") {
-                                Task {
-                                    await viewModel.createSession(
-                                        name: newSessionName,
-                                        category: newSessionCategory.isEmpty ? nil : newSessionCategory
-                                    )
-                                    isShowingNewSession = false
-                                    newSessionName = ""
-                                    newSessionCategory = ""
-                                }
-                            }
-                            .disabled(newSessionName.isEmpty)
-                        }
-                    }
-                }
+                ProjectSelectionView()
             }
             .refreshable {
                 await viewModel.fetchSessions()
