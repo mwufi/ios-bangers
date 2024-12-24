@@ -26,6 +26,7 @@ class ProjectService: ObservableObject {
         return try await auth.supabase
             .from("projects")
             .select()
+            .order("created_at", ascending: false)
             .execute()
             .value
     }
