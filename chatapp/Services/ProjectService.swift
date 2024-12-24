@@ -44,7 +44,7 @@ class ProjectService: ObservableObject {
     func fetchProjectSessions(_ projectId: Int) async throws -> [WorkSession] {
         return try await auth.supabase
             .from("work_sessions")
-            .select("*, project(*)")
+            .select("*, projects(*)")
             .eq("project_id", value: projectId)
             .execute()
             .value
