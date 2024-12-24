@@ -137,7 +137,7 @@ struct SessionBlock: View {
     @Environment(\.colorScheme) var colorScheme
     
     private var isLongSession: Bool {
-        session.elapsedTime >= 30 * 60 // 30 minutes
+        session.elapsedTime >= 15 * 60 // 30 minutes
     }
     
     private var sessionDuration: String {

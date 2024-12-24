@@ -9,7 +9,7 @@ struct ProjectsView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(spacing: 12) {
                     ForEach(projects) { project in
                         NavigationLink {
                             ProjectDetailView(project: project)
@@ -27,10 +27,14 @@ struct ProjectsView: View {
                                         Text(description)
                                             .font(.caption)
                                             .foregroundColor(.secondary)
+                                            .lineLimit(1)
                                     }
                                 }
+                                
+                                Spacer()
                             }
                             .padding()
+                            .frame(maxWidth: .infinity)
                             .background(Color.gray.opacity(0.1))
                             .cornerRadius(12)
                         }
@@ -61,6 +65,43 @@ struct ProjectDetailView: View {
     let project: Project
     @StateObject private var projectService = ProjectService()
     @State private var sessions: [WorkSession] = []
+    @Environment(\.colorScheme) var colorScheme
+    
+    var totalTime: TimeInterval {
+        sessions.reduce(0) { $0 + $1.elapsedTime }
+    }
+    
+    var sessionsByDay: [(Date, [WorkSession])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: sessions) { session in
+            calendar.startOfDay(for: session.createdAt)
+        }
+        return grouped.sorted { $0.key > $1.key }
+    }
+    
+    func formatDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: date)
+        }
+    }
+    
+    func formatDuration(_ duration: TimeInterval) -> String {
+        let hours = Int(duration) / 3600
+        let minutes = Int(duration) / 60 % 60
+        
+        if hours > 0 {
+            return minutes > 0 ? "\(hours)h \(minutes)m" : "\(hours)h"
+        } else {
+            return "\(minutes)m"
+        }
+    }
     
     var body: some View {
         ScrollView {
@@ -79,22 +120,64 @@ struct ProjectDetailView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(project.name)
-                        .font(.title)
-                        .bold()
+                    HStack {
+                        Circle()
+                            .fill(project.color?.color ?? .blue)
+                            .frame(width: 12, height: 12)
+                        
+                        Text(project.name)
+                            .font(.title)
+                            .bold()
+                    }
                     
                     if let description = project.description {
                         Text(description)
                             .font(.body)
                             .foregroundColor(.secondary)
                     }
+                    
+                    Text("Total time: \(formatDuration(totalTime))")
+                        .font(.headline)
+                        .foregroundColor(.orange)
+                        .padding(.top, 4)
                 }
                 .padding(.horizontal)
                 
-                if !sessions.isEmpty {
-                    SessionsList(sessions: sessions)
-                        .padding(.horizontal)
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(sessionsByDay, id: \.0) { date, daySessions in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(formatDate(date))
+                                .font(.headline)
+                            
+                            let sessionsByHour = Dictionary(grouping: daySessions) { session in
+                                Calendar.current.component(.hour, from: session.createdAt)
+                            }.sorted { $0.key < $1.key }
+                            
+                            ForEach(sessionsByHour, id: \.0) { hour, sessions in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(formatHour(hour))
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    ForEach(sessions) { session in
+                                        HStack {
+                                            Text(session.name)
+                                                .font(.subheadline)
+                                            
+                                            Spacer()
+                                            
+                                            Text(formatDuration(session.elapsedTime))
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .padding(.vertical, 6)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+                .padding(.horizontal)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -106,51 +189,19 @@ struct ProjectDetailView: View {
             }
         }
     }
-}
-
-struct SessionsList: View {
-    let sessions: [WorkSession]
     
-    var groupedSessions: [(String, [WorkSession])] {
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: sessions) { session in
-            calendar.startOfDay(for: session.createdAt)
-        }
-        return grouped.map { (date, sessions) in
-            (formatDate(date), sessions)
-        }.sorted { $0.0 > $1.0 }
-    }
-    
-    func formatDate(_ date: Date) -> String {
-        let calendar = Calendar.current
-        if calendar.isDateInToday(date) {
-            return "Today"
-        } else if calendar.isDateInYesterday(date) {
-            return "Yesterday"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
+    private func formatHour(_ hour: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hour
+        components.minute = 0
+        
+        if let date = Calendar.current.date(from: components) {
             return formatter.string(from: date)
         }
-    }
-    
-    var body: some View {
-        ForEach(groupedSessions, id: \.0) { date, sessions in
-            Section(header: Text(date).font(.headline)) {
-                ForEach(sessions) { session in
-                    VStack(alignment: .leading) {
-                        Text(session.name)
-                            .font(.subheadline)
-                        if let category = session.category {
-                            Text(category)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-        }
+        return "\(hour):00"
     }
 }
 
