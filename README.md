@@ -11,6 +11,7 @@ A collection of stunning iOS UI components and effects built with SwiftUI.
     <img src="docs/flow.png" width="33%" alt="Original app idea"/>
     <img src="docs/gradient.png" width="33%" alt="Soft Animations"/>
     <img src="docs/navigation.png" width="33%" alt="Navigation Stacks!"/>
+    <img src="docs/flow 2.png" width="33%" alt="Focus app"/>
 </div>
 
 Interactive neon glow effects with customizable:
