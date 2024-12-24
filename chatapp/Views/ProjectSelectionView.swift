@@ -8,6 +8,9 @@ struct ProjectSelectionView: View {
     @State private var sessions: [WorkSession] = []
     @State private var selectedProject: Project?
     @State private var isShowingNewSession = false
+    @State private var errorMessage: String?
+    @State private var showError = false
+    @Binding var isPresented: Bool
     
     private let sortService = ProjectSortService.shared
     
@@ -77,10 +80,15 @@ struct ProjectSelectionView: View {
             }
             .sheet(isPresented: $isShowingNewSession) {
                 if let project = selectedProject {
-                    NewSessionView(project: project)
+                    NewSessionView(project: project, parentDismiss: { isPresented = false })
                 }
             }
         }
+        .alert("Error", isPresented: $showError, actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text(errorMessage ?? "An unknown error occurred")
+        })
         .task {
             do {
                 async let projectsTask = projectService.fetchProjects()
@@ -139,10 +147,13 @@ struct ProjectCard: View {
 
 struct NewSessionView: View {
     let project: Project
+    let parentDismiss: () -> Void
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = WorkSessionViewModel()
     @State private var sessionName = ""
     @State private var category = ""
+    @State private var errorMessage: String?
+    @State private var showError = false
     
     var body: some View {
         NavigationView {
@@ -168,22 +179,34 @@ struct NewSessionView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
+                        parentDismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start") {
                         Task {
-                            await viewModel.createSession(
-                                name: sessionName,
-                                category: category.isEmpty ? nil : category,
-                                projectId: project.id
-                            )
-                            dismiss()
+                            do {
+                                try await viewModel.createSession(
+                                    name: sessionName,
+                                    category: category.isEmpty ? nil : category,
+                                    projectId: project.id
+                                )
+                                parentDismiss()
+                                dismiss()
+                            } catch {
+                                errorMessage = error.localizedDescription
+                                showError = true
+                            }
                         }
                     }
                     .disabled(sessionName.isEmpty)
                 }
             }
         }
+        .alert("Error", isPresented: $showError, actions: {
+            Button("OK", role: .cancel) { }
+        }, message: {
+            Text(errorMessage ?? "An unknown error occurred")
+        })
     }
 }

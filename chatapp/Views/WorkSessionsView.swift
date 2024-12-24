@@ -79,9 +79,10 @@ struct WorkSessionsView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .disabled(!viewModel.activeSessions.isEmpty)
             }
             .sheet(isPresented: $isShowingNewSession) {
-                ProjectSelectionView()
+                ProjectSelectionView(isPresented: $isShowingNewSession)
             }
             .refreshable {
                 await viewModel.fetchSessions()
@@ -175,8 +176,31 @@ struct SessionBlock: View {
 struct ActiveSessionRow: View {
     let session: WorkSession
     let viewModel: WorkSessionViewModel
+    @State private var isFlipped = false
+    @State private var degree: Double = 0
     
     var body: some View {
+        ZStack {
+            // Front side
+            frontView
+                .opacity(isFlipped ? 0 : 1)
+                .rotation3DEffect(.degrees(degree), axis: (x: 0, y: 1, z: 0))
+            
+            // Back side
+            backView
+                .opacity(isFlipped ? 1 : 0)
+                .rotation3DEffect(.degrees(degree + 180), axis: (x: 0, y: 1, z: 0))
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                degree += 180
+                isFlipped.toggle()
+            }
+        }
+    }
+    
+    private var frontView: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 if let project = session.project {
@@ -200,8 +224,8 @@ struct ActiveSessionRow: View {
                 Spacer()
                 
                 Text(viewModel.formatDuration(session.elapsedTime))
+                    .font(.subheadline)
                     .monospacedDigit()
-                    .foregroundColor(.orange)
             }
             
             if let category = session.category {
@@ -211,17 +235,40 @@ struct ActiveSessionRow: View {
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.1))
+        .background(Color(uiColor: .secondarySystemBackground))
         .cornerRadius(12)
-        .swipeActions {
-            Button(role: .destructive) {
-                Task {
-                    await viewModel.endSession(session)
+    }
+    
+    private var backView: some View {
+        VStack(spacing: 12) {
+            Text("End this session?")
+                .font(.headline)
+            
+            HStack(spacing: 16) {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.5)) {
+                        degree += 180
+                        isFlipped.toggle()
+                    }
+                }) {
+                    Text("Cancel")
+                        .foregroundColor(.secondary)
                 }
-            } label: {
-                Label("End", systemImage: "stop.fill")
+                
+                Button(action: {
+                    Task {
+                        await viewModel.endSession(session)
+                    }
+                }) {
+                    Text("End Session")
+                        .foregroundColor(.red)
+                }
             }
         }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .background(Color(uiColor: .secondarySystemBackground))
+        .cornerRadius(12)
     }
 }
 

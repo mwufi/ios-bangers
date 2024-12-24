@@ -36,7 +36,12 @@ class WorkSessionViewModel: ObservableObject {
         }
     }
     
-    func createSession(name: String, category: String? = nil, projectId: Int? = nil, target: Int? = nil) async {
+    func createSession(name: String, category: String? = nil, projectId: Int? = nil, target: Int? = nil) async throws {
+        // Check if there's already an active session
+        if !activeSessions.isEmpty {
+            throw SessionError.activeSessionExists
+        }
+        
         let newSession = NewSession(
             name: name,
             category: category,
@@ -49,11 +54,15 @@ class WorkSessionViewModel: ObservableObject {
             await fetchSessions()
         } catch {
             self.error = error.localizedDescription
+            throw error
         }
     }
     
     func endSession(_ session: WorkSession) async {
         do {
+            let dateFormatter = ISO8601DateFormatter()
+            let currentDate = dateFormatter.string(from: Date())
+            let update = SessionUpdate(endedAt: currentDate, editedDuration: nil)
             try await sessionService.endSession(session.id)
             await fetchSessions()
         } catch {
@@ -75,5 +84,16 @@ class WorkSessionViewModel: ObservableObject {
     
     deinit {
         timer?.invalidate()
+    }
+}
+
+enum SessionError: LocalizedError {
+    case activeSessionExists
+    
+    var errorDescription: String? {
+        switch self {
+        case .activeSessionExists:
+            return "You already have an active session. Please end it before starting a new one."
+        }
     }
 }
