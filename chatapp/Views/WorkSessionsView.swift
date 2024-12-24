@@ -50,15 +50,15 @@ struct WorkSessionsView: View {
                             
                             let sessionsByHour = Dictionary(grouping: sessions) { session in
                                 Calendar.current.component(.hour, from: session.createdAt)
-                            }.sorted { $0.key < $1.key }
+                            }.sorted { $0.key > $1.key }
                             
-                            ForEach(sessionsByHour, id: \.0) { hour, sessions in
+                            ForEach(sessionsByHour, id: \.0) { hour, hourSessions in
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(formatHour(hour))
                                         .font(.subheadline)
                                         .foregroundColor(.secondary)
                                     
-                                    ForEach(sessions) { session in
+                                    ForEach(hourSessions.sorted { $0.createdAt > $1.createdAt }) { session in
                                         NavigationLink {
                                             SessionDetailView(session: session)
                                         } label: {
