@@ -66,6 +66,18 @@ struct ProjectsView: View {
                     Image(systemName: "plus")
                 }
             }
+            .sheet(isPresented: $isShowingNewProject) {
+                NewProjectView()
+                    .onDisappear {
+                        Task {
+                            do {
+                                projects = try await projectService.fetchProjects()
+                            } catch {
+                                print("Error refreshing projects: \(error)")
+                            }
+                        }
+                    }
+            }
             .task {
                 do {
                     projects = try await projectService.fetchProjects()
