@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import Storage
 
 struct ProjectsView: View {
     @StateObject private var projectService = ProjectService()
@@ -65,6 +67,8 @@ struct ProjectDetailView: View {
     let project: Project
     @StateObject private var projectService = ProjectService()
     @State private var sessions: [WorkSession] = []
+    @State private var selectedItem: PhotosPickerItem?
+    private let auth = AuthenticationService.shared
     @Environment(\.colorScheme) var colorScheme
     
     var totalTime: TimeInterval {
@@ -107,80 +111,137 @@ struct ProjectDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if let headerImg = project.headerImg {
-                    AsyncImage(url: URL(string: headerImg)) { image in
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } placeholder: {
-                        Rectangle()
-                            .fill(.gray.opacity(0.2))
+                    ZStack(alignment: .topTrailing) {
+                        AsyncImage(url: URL(string: headerImg)) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                        }
+                        .frame(height: 200)
+                        .clipped()
+                        
+                        PhotosPicker(selection: $selectedItem,
+                                   matching: .images) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        .padding(8)
                     }
-                    .frame(height: 200)
-                    .clipped()
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Circle()
-                            .fill(project.color?.color ?? .blue)
-                            .frame(width: 12, height: 12)
-                        
-                        Text(project.name)
-                            .font(.title)
-                            .bold()
-                    }
+                    Text(project.name)
+                        .font(.title)
+                        .fontWeight(.bold)
                     
                     if let description = project.description {
                         Text(description)
-                            .font(.body)
                             .foregroundColor(.secondary)
                     }
                     
-                    Text("Total time: \(formatDuration(totalTime))")
-                        .font(.headline)
-                        .foregroundColor(.orange)
+                    Text("Total Time: \(formatDuration(totalTime))")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                         .padding(.top, 4)
                 }
                 .padding(.horizontal)
                 
-                VStack(alignment: .leading, spacing: 16) {
-                    ForEach(sessionsByDay, id: \.0) { date, daySessions in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(formatDate(date))
-                                .font(.headline)
-                            
-                            let sessionsByHour = Dictionary(grouping: daySessions) { session in
-                                Calendar.current.component(.hour, from: session.createdAt)
-                            }.sorted { $0.key > $1.key }
-                            
-                            ForEach(sessionsByHour, id: \.0) { hour, hourSessions in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(formatHour(hour))
-                                        .font(.subheadline)
-                                        .foregroundColor(.secondary)
+                ForEach(sessionsByDay, id: \.0) { date, daySessions in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(formatDate(date))
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal)
+                        
+                        ForEach(daySessions) { session in
+                            HStack {
+                                VStack(alignment: .leading) {
+                                    Text(session.name)
+                                        .font(.headline)
                                     
-                                    ForEach(hourSessions.sorted { $0.createdAt > $1.createdAt }) { session in
-                                        HStack {
-                                            Text(session.name)
-                                                .font(.subheadline)
-                                            
-                                            Spacer()
-                                            
-                                            Text(formatDuration(session.elapsedTime))
-                                                .font(.caption)
-                                                .foregroundColor(.secondary)
-                                        }
-                                        .padding(.vertical, 6)
+                                    if let category = session.category {
+                                        Text(category)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
                                     }
                                 }
+                                
+                                Spacer()
+                                
+                                Text(formatDuration(session.elapsedTime))
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
                             }
+                            .padding()
+                            .background(Color.gray.opacity(0.1))
+                            .cornerRadius(12)
+                            .padding(.horizontal)
                         }
                     }
+                    .padding(.top)
                 }
-                .padding(.horizontal)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onChange(of: selectedItem) { newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    do {
+                        print("📸 Image data loaded, size: \(data.count) bytes")
+                        
+                        // Generate a unique filename
+                        let fileName = "project-headers/\(UUID().uuidString).png"
+                        print("📝 Generated filename: \(fileName)")
+                        
+                        // Upload to Supabase storage
+                        print("⬆️ Starting upload to project-images bucket...")
+                        try await auth.supabase.storage
+                            .from("project-images")
+                            .upload(
+                                path: fileName,
+                                file: data,
+                                options: FileOptions(
+                                    cacheControl: "3600",
+                                    contentType: "image/png",
+                                    upsert: false
+                                )
+                            )
+                        print("✅ Upload successful!")
+                        
+                        // Get the public URL
+                        print("🔗 Getting public URL...")
+                        let publicURL = try await auth.supabase.storage
+                            .from("project-images")
+                            .getPublicURL(path: fileName)
+                        print("📍 Public URL: \(publicURL)")
+                        
+                        // Update the project with new header image
+                        print("📝 Updating project with new header image...")
+                        try await auth.supabase
+                            .from("projects")
+                            .update(["header_img": publicURL])
+                            .eq("id", value: project.id)
+                            .execute()
+                        print("✨ Project updated successfully!")
+                        
+                        // Refresh the view
+                        sessions = try await projectService.fetchProjectSessions(project.id)
+                        print("🔄 View refreshed with new data")
+                    } catch {
+                        print("❌ Error during image upload process: \(error)")
+                    }
+                } else {
+                    print("⚠️ Failed to load image data from picker")
+                }
+            }
+        }
         .task {
             do {
                 sessions = try await projectService.fetchProjectSessions(project.id)
@@ -188,20 +249,6 @@ struct ProjectDetailView: View {
                 print("Error fetching sessions: \(error)")
             }
         }
-    }
-    
-    private func formatHour(_ hour: Int) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        
-        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        components.hour = hour
-        components.minute = 0
-        
-        if let date = Calendar.current.date(from: components) {
-            return formatter.string(from: date)
-        }
-        return "\(hour):00"
     }
 }
 

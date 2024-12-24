@@ -25,9 +25,17 @@ class ProjectService: ObservableObject {
     func fetchProjectSessions(_ projectId: Int) async throws -> [WorkSession] {
         return try await auth.supabase
             .from("work_sessions")
-            .select()
+            .select("*, projects(*)")
             .eq("project_id", value: projectId)
             .execute()
             .value
+    }
+    
+    func updateProject(id: Int, headerImg: String) async throws {
+        try await auth.supabase
+            .from("projects")
+            .update(["header_img": headerImg])
+            .eq("id", value: id)
+            .execute()
     }
 }
