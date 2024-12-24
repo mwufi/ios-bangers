@@ -7,28 +7,72 @@ struct WorkSessionsView: View {
     @State private var newSessionName = ""
     @State private var newSessionCategory = ""
     
+    var groupedPastSessions: [(Date, [WorkSession])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: viewModel.pastSessions) { session in
+            calendar.startOfDay(for: session.createdAt)
+        }
+        return grouped.sorted { $0.key > $1.key }
+    }
+    
+    func formatDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: date)
+        }
+    }
+    
     var body: some View {
         NavigationView {
-            List {
-                if !viewModel.activeSessions.isEmpty {
-                    Section("Active Sessions") {
-                        ForEach(viewModel.activeSessions) { session in
-                            ActiveSessionRow(session: session, viewModel: viewModel)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    if !viewModel.activeSessions.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Active Sessions")
+                                .font(.headline)
+                            
+                            ForEach(viewModel.activeSessions) { session in
+                                ActiveSessionRow(session: session, viewModel: viewModel)
+                            }
+                        }
+                    }
+                    
+                    ForEach(groupedPastSessions, id: \.0) { date, sessions in
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text(formatDate(date))
+                                .font(.headline)
+                            
+                            let sessionsByHour = Dictionary(grouping: sessions) { session in
+                                Calendar.current.component(.hour, from: session.createdAt)
+                            }.sorted { $0.key < $1.key }
+                            
+                            ForEach(sessionsByHour, id: \.0) { hour, sessions in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(formatHour(hour))
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                    
+                                    ForEach(sessions) { session in
+                                        NavigationLink {
+                                            SessionDetailView(session: session)
+                                        } label: {
+                                            SessionBlock(session: session)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                
-                Section("Past Sessions") {
-                    ForEach(viewModel.pastSessions) { session in
-                        NavigationLink {
-                            SessionDetailView(session: session)
-                        } label: {
-                            PastSessionRow(session: session)
-                        }
-                    }
-                }
+                .padding()
             }
-            .navigationTitle("Work Sessions")
+            .navigationTitle("Focus")
             .toolbar {
                 Button {
                     isShowingNewSession = true
@@ -72,6 +116,88 @@ struct WorkSessionsView: View {
             }
         }
     }
+    
+    private func formatHour(_ hour: Int) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hour
+        components.minute = 0
+        
+        if let date = Calendar.current.date(from: components) {
+            return formatter.string(from: date)
+        }
+        return "\(hour):00"
+    }
+}
+
+struct SessionBlock: View {
+    let session: WorkSession
+    @Environment(\.colorScheme) var colorScheme
+    
+    private var isLongSession: Bool {
+        session.elapsedTime >= 30 * 60 // 30 minutes
+    }
+    
+    private var sessionDuration: String {
+        let minutes = Int(session.elapsedTime / 60)
+        if minutes < 60 {
+            return "\(minutes)m"
+        } else {
+            let hours = minutes / 60
+            let remainingMinutes = minutes % 60
+            if remainingMinutes == 0 {
+                return "\(hours)h"
+            }
+            return "\(hours)h \(remainingMinutes)m"
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            if let project = session.project {
+                Circle()
+                    .fill(project.color?.color ?? .blue)
+                    .frame(width: 8, height: 8)
+            }
+            
+            VStack(alignment: .leading, spacing: isLongSession ? 4 : 2) {
+                HStack {
+                    Text(session.name)
+                        .font(isLongSession ? .subheadline : .caption)
+                        .foregroundColor(colorScheme == .dark ? .white : .black)
+                    
+                    if let project = session.project {
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        NavigationLink(destination: ProjectDetailView(project: project)) {
+                            Text(project.name)
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                
+                if isLongSession {
+                    Text(sessionDuration)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            if !isLongSession {
+                Text(sessionDuration)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 6)
+    }
 }
 
 struct ActiveSessionRow: View {
@@ -81,8 +207,15 @@ struct ActiveSessionRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
+                if let project = session.project {
+                    Circle()
+                        .fill(project.color?.color ?? .blue)
+                        .frame(width: 12, height: 12)
+                }
+                
                 Text(session.name)
                     .font(.headline)
+                
                 if let project = session.project {
                     Text("in")
                         .font(.caption)
@@ -91,7 +224,9 @@ struct ActiveSessionRow: View {
                         .font(.subheadline)
                         .foregroundColor(.blue)
                 }
+                
                 Spacer()
+                
                 Text(viewModel.formatDuration(session.elapsedTime))
                     .monospacedDigit()
                     .foregroundColor(.orange)
@@ -103,7 +238,9 @@ struct ActiveSessionRow: View {
                     .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
         .swipeActions {
             Button(role: .destructive) {
                 Task {

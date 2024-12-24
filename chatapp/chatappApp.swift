@@ -14,7 +14,7 @@ struct chatappApp: App {
     var body: some Scene {
         WindowGroup {
             if authService.isAuthenticated {
-                WorkSessionsView()
+                MainTabView()
             } else {
                 LoginView()
             }
