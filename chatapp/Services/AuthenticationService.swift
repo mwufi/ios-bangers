@@ -55,6 +55,14 @@ class AuthenticationService: ObservableObject {
         }
     }
     
+    func signUpWithPhone(phone: String, password: String) async throws {
+        let session = try await supabase.auth.signUp(phone: phone, password: password)
+        DispatchQueue.main.async {
+            self.currentUser = session.user
+            self.isAuthenticated = true
+        }
+    }
+    
     func signOut() async throws {
         try await supabase.auth.signOut()
         DispatchQueue.main.async {

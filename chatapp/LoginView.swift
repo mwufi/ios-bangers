@@ -10,6 +10,8 @@ struct LoginView: View {
     @State private var loginMethod: LoginMethod = .email
     @State private var errorMessage = ""
     @State private var isLoading = false
+    @State private var isShowingSignUp = false
+    @Environment(\.dismiss) private var dismiss
     
     enum LoginMethod {
         case email
@@ -55,26 +57,38 @@ struct LoginView: View {
                         .font(.caption)
                 }
                 
-                Button(action: {
-                    Task {
-                        await login()
+                Section {
+                    Button(action: {
+                        Task {
+                            await login()
+                        }
+                    }) {
+                        if isLoading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Text(isShowingOTPField ? "Verify OTP" : "Login")
+                                .frame(maxWidth: .infinity)
+                        }
                     }
-                }) {
-                    if isLoading {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    } else {
-                        Text(isShowingOTPField ? "Verify OTP" : "Login")
-                            .frame(maxWidth: .infinity)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isLoading)
+                    
+                    Button("Create Account") {
+                        isShowingSignUp = true
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(isLoading)
                 
                 Spacer()
             }
             .padding()
+            .navigationBarItems(leading: Button("Cancel") {
+                dismiss()
+            })
             .navigationTitle("Login")
+        }
+        .sheet(isPresented: $isShowingSignUp) {
+            SignUpView()
         }
     }
     
